@@ -38,62 +38,70 @@ driver = webdriver.Chrome(service=service, options=chrome_options)
 client = pymongo.MongoClient("mongodb://localhost:27017/")
 db = client["airbnb_prices"]
 locationCollection = db["locations"]
-
-# Get the current date for the error log file name
-current_date = datetime.now().strftime('%Y-%m-%d')
-error_log_file = f"error_list\\errors_{current_date}.txt"
+logsCollection = db["logs"]
 
 page_size = 10 
 page_number = 1 
 
 while True:
-    missing_type_listings = locationCollection.find({
-        "$or": [
-            { "type": { "$exists": False } },
-            { "type": "" }
-        ]
-    }).skip((page_number - 1) * page_size).limit(page_size)
+    try: 
+        missing_type_listings = locationCollection.find({
+            "$or": [
+                { "type": { "$exists": False } },
+                { "type": "" }
+            ]
+        }).skip((page_number - 1) * page_size).limit(page_size)
 
-    updates = []
-    listings_found = False
+        updates = []
+        listings_found = False
 
-    for obj in missing_type_listings:
+        for obj in missing_type_listings:
+            
+            try:
+                listings_found = True  # At least one listing was found
+                url = obj.get("url")
+                
+                if "http" not in url:
+                    url = "https://" + url
+                
+                # Open the URL
+                driver.get(url)
+
+                # Wait for the page to load
+                time.sleep(5)  # Adjust sleep time as necessary
         
-        try:
-            listings_found = True  # At least one listing was found
-            url = obj.get("url")
+                newObj = extract_listing_data(driver, obj)
+                
+                # Prepare the update operation
+                update_result = locationCollection.update_one(
+                    {"airbnbId": newObj.get("airbnbId")},   # Filter to find the document by airbnbId
+                    {"$set": newObj}                        # Update operation to set the newObj data
+                )
+                
+            except Exception as e:
+                log = {
+                    "date": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    "data": obj,
+                    "when": "Failed to save airbnb type for a specific one",
+                    "message": str(e)
+                }
+                logsCollection.insert_one(log)  
+                listing_found = False
             
-            if "http" not in url:
-                url = "https://" + url
-            
-            # Open the URL
-            driver.get(url)
+        # Break the loop if no more listings are found
+        if not listings_found:
+            break
 
-            # Wait for the page to load
-            time.sleep(5)  # Adjust sleep time as necessary
-    
-            newObj = extract_listing_data(driver, obj)
-            
-            # Prepare the update operation
-            update_result = locationCollection.update_one(
-                {"airbnbId": newObj.get("airbnbId")},   # Filter to find the document by airbnbId
-                {"$set": newObj}                        # Update operation to set the newObj data
-            )
-            
-        except Exception as e:
-            # Log the exception to the error log file
-            error_message = ""
-            with open(error_log_file, 'a') as f:
-                f.write(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - Error: {str(e)}\n")
-                f.write(f"Listings Data: {obj.text}\n")
-            continue
-        
-    # Break the loop if no more listings are found
-    if not listings_found:
+        # Increment the page number for the next iteration
+        page_number += 1
+    except Exception as e:
+        log = {
+            "date": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            "data": "page: " + str(page_number),
+            "when": "Failed to save airbnb types",
+            "message": str(e)
+        }
+        logsCollection.insert_one(log)            
         break
 
-    # Increment the page number for the next iteration
-    page_number += 1
-
-# Close the MongoDB connection
 client.close()

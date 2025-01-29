@@ -124,10 +124,10 @@ db = client["airbnb_prices"]  # Create or connect to the database
 listingCollection = db["airbnb_data"]    # Create or connect to the collection
 executionCollection = db["executions"]    # Create or connect to the collection
 locationCollection = db["locations"]    # Create or connect to the collection
+logsCollection = db["logs"]    # Create or connect to the collection
 
 # Get the current date for the error log file name
 current_date = datetime.now().strftime('%Y-%m-%d')
-error_log_file = f"error_list\\errors_{current_date}.txt"
 
 # Check if today's execution already exists
 if executionCollection.find_one({"executionDate": current_date}):
@@ -159,28 +159,40 @@ for file_data in config_file['location']:
             listings_data = []  # List to hold listing data
 
             for listing in listings:
-                obj = extract_listing_data(listing)
-                
-                location_data = locationCollection.find_one({"airbnbId": obj["airbnbId"]})
-                if location_data:
-                    obj["location"] = location_data.get("location")  # Update location if found
-                    obj["ownerName"] = location_data.get("ownerName")
-                    obj["type"] = location_data.get("type")
-                
-                obj["city"] = location_name
-                
-                listings_data.append(obj)
-                all_listings_data.append(obj) 
+                try:
+                    obj = extract_listing_data(listing)
+
+                    location_data = locationCollection.find_one({"airbnbId": obj["airbnbId"]})
+                    if location_data:
+                        obj["location"] = location_data.get("location")  # Update location if found
+                        obj["ownerName"] = location_data.get("ownerName")
+                        obj["type"] = location_data.get("type")
+                    
+                    obj["city"] = location_name
+                    
+                    listings_data.append(obj)
+                    all_listings_data.append(obj) 
+                except Exception as e:
+                    log = {
+                        "date": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                        "data": listing,
+                        "fixed_message": "Failed to load specific airbnb data",
+                        "message": str(e)
+                    }
+                    logsCollection.insert_one(log)            
+                    continue
             
             if listings_data:
                 listingCollection.insert_many(listings_data)
             
         except Exception as e:
-            # Log the exception to the error log file
-            error_message = ""
-            with open(error_log_file, 'a') as f:
-                f.write(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - Error: {str(e)}\n")
-                f.write(f"Listings Data: {listing.text}\n")
+            log = {
+                "date": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                "data": url,
+                "fixed_message": "Failed to load airbnbs",
+                "message": str(e)
+            }
+            logsCollection.insert_one(log)            
             continue
         
         try:
@@ -188,9 +200,9 @@ for file_data in config_file['location']:
             url = urlElement.get_attribute('href')
         except Exception as e:
             url = ""
+            
 
 try:
-    
     for listing in all_listings_data:
         airbnb_id = listing['airbnbId']
         
@@ -213,8 +225,13 @@ try:
     
 except Exception as e:
     # Log the exception to the error log file
-    with open(error_log_file, 'a') as f:
-        f.write(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - Error: {str(e)}\n")
+    log = {
+        "date": datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        "data": "",
+        "fixed_message": "Failed saving locations or execution date",
+        "message": str(e)
+    }
+    logsCollection.insert_one(log)
 
 
 # Close the MongoDB connection and the browser
