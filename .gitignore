@@ -1,1 +1,4 @@
 chromedriver.exe
+objects/__pycache__/
+utils/__pycache__/
+get_airbnb_data.zip
