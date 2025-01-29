@@ -104,4 +104,10 @@ while True:
         logsCollection.insert_one(log)            
         break
 
+print(f"")
+print(f"")
+print(f"---------------------------------------------------------------")
+print(f"FINISHED PROCESS: Obter o tipo da locação e salvar no Mongo.")
+
 client.close()
+driver.quit()

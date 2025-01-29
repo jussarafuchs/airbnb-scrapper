@@ -233,6 +233,10 @@ except Exception as e:
     }
     logsCollection.insert_one(log)
 
+print(f"")
+print(f"")
+print(f"---------------------------------------------------------------")
+print(f"FINISHED PROCESS: Obter dados do airbnb e salvar no MongoDB.")
 
 # Close the MongoDB connection and the browser
 client.close()

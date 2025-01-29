@@ -71,4 +71,9 @@ while True:
         logsCollection.insert_one(log)            
         break
 
+print(f"")
+print(f"")
+print(f"---------------------------------------------------------------")
+print(f"FINISHED PROCESS: Preencher dados das localizações.")
+
 client.close()
