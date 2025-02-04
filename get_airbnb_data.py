@@ -8,6 +8,7 @@ import re
 from datetime import datetime
 from bson.objectid import ObjectId
 
+from ansi_codes import enable_ansi_escape_codes
 from objects.log import Log
 from utils.chromedriver import get_chrome_driver
 from utils.mongodb import Database_Config, get_database
@@ -119,6 +120,8 @@ def extract_listing_data(listing):
     return listing_data
 
 
+enable_ansi_escape_codes()
+
 driver = get_chrome_driver()
 
 db, client = get_database()
@@ -132,7 +135,10 @@ current_date = datetime.now().strftime('%Y-%m-%d')
 
 # Check if today's execution already exists
 if executions_collection.find_one({"executionDate": current_date}):
-    print_green("Today's execution already exists. Exiting.")
+    print_green(f"")
+    print_green(f"")
+    print_green(f"------------------------------------")
+    print_green("A execução de hoje já terminou!")
     client.close()
     driver.quit()
     exit()

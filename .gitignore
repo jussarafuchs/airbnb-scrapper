@@ -1,4 +1,5 @@
 chromedriver.exe
 objects/__pycache__/
 utils/__pycache__/
-get_airbnb_data.zip
+airbnb_data.csv
+__pycache__/ansi_codes.cpython-312.pyc

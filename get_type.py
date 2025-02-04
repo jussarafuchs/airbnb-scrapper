@@ -3,6 +3,7 @@ import time
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 
+from ansi_codes import enable_ansi_escape_codes
 from objects.location import Location
 from objects.log import Log
 from utils.chromedriver import get_chrome_driver
@@ -28,6 +29,8 @@ def extract_listing_data(driver: WebDriver, obj: Location):
 
     return obj
 
+
+enable_ansi_escape_codes()
 
 driver = get_chrome_driver()
 

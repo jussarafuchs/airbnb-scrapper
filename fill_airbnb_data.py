@@ -1,9 +1,11 @@
+from ansi_codes import enable_ansi_escape_codes
 from objects.airbnb_data import Airbnb_Data
 from objects.location import Location
 from objects.log import Log
 from utils.mongodb import Database_Config, get_database
 from utils.print import print_green, print_red
 
+enable_ansi_escape_codes()
 db, client = get_database()
 airbnb_data_collection = db[Database_Config.AIRBNB_DATA]
 location_collection = db[Database_Config.LOCATION]
@@ -52,7 +54,8 @@ while True:
                         {"_id": airbnb_data._id},
                         {"$set": airbnb_data.to_vars()}
                     )
-                    print_green(f"Atualizado a localização do AIRBNB ({airbnb_data.airbnbId})...")
+                    print_green(f"Atualizado a localização do AIRBNB ({
+                                airbnb_data.airbnbId})...")
             except Exception as e:
                 log = Log(
                     airbnb_data.to_vars(), f"[ERRO] - Ocorreu ao salvar os dados da localização no AIRBNB ({airbnb_data.airbnbId}).", str(e))
@@ -74,6 +77,7 @@ while True:
 print_green(f"")
 print_green(f"")
 print_green(f"---------------------------------------------------------------")
-print_green(f"-> PROCESSO FINALIZADO: Salvar dados de localização no airbnb_data.")
+print_green(
+    f"-> PROCESSO FINALIZADO: Salvar dados de localização no airbnb_data.")
 
 client.close()
